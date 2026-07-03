@@ -1,0 +1,295 @@
+/* ------------------------------------------------------------------ */
+/* Hero (landing page only)                                           */
+/* ------------------------------------------------------------------ */
+
+.hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 5rem 2rem 5rem;
+    gap: 0;
+}
+
+.hero .hero-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 720px;
+}
+
+.hero .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    background: #e7f6ec;
+    color: #1f7a45;
+    border: 1px solid #cdead9;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: normal;
+    padding: 0.5rem 1.1rem;
+    border-radius: 999px;
+    margin-bottom: 1.75rem;
+}
+
+.hero .hero-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #2fa360;
+    flex-shrink: 0;
+}
+
+.hero .hero-title {
+    font-family: 'DM Sans', var(--font-body);
+    font-weight: 800;
+    font-size: clamp(2.75rem, 6vw, 4.25rem);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin-bottom: 1.5rem;
+}
+
+.hero .hero-title-accent {
+    color: #2fa360;
+}
+
+.hero .hero-subtitle {
+    font-size: 1.1rem;
+    color: var(--ink-muted);
+    line-height: 1.7;
+    max-width: 560px;
+    margin: 0 auto 2.25rem;
+}
+
+.hero .hero-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 4rem;
+}
+
+.hero .hero-btn {
+    display: inline-block;
+    background: var(--ink);
+    color: var(--paper);
+    padding: 0.85rem 1.75rem;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+
+.hero .hero-btn:hover {
+    background: #2fa360;
+}
+
+/* ------------------------------------------------------------------ */
+/* Dashboard mockup                                                    */
+/* ------------------------------------------------------------------ */
+
+.hero .hero-visual {
+    width: 100%;
+    display: block;
+}
+
+.hero .dashboard-card {
+    max-width: 920px;
+    margin: 0 auto;
+    background: var(--paper-warm);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    text-align: left;
+}
+
+.hero .dashboard-dots {
+    display: flex;
+    gap: 0.4rem;
+    margin-bottom: 1.5rem;
+}
+
+.hero .dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+}
+
+.hero .dot-red { background: #e8746a; }
+.hero .dot-yellow { background: #f0b93d; }
+.hero .dot-green { background: #7dd0a0; }
+
+.hero .dashboard-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.hero .dashboard-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    background: var(--paper-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+}
+
+.hero .dashboard-stat-label {
+    font-size: 0.85rem;
+    color: var(--ink-muted);
+}
+
+.hero .dashboard-stat-value {
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 1.6rem;
+    color: var(--ink);
+}
+
+.hero .dashboard-stat-change {
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.hero .dashboard-stat-change.negative { color: var(--danger); }
+.hero .dashboard-stat-change.positive { color: #2fa360; }
+.hero .dashboard-stat-change.neutral { color: var(--ink-faint); }
+
+.hero .dashboard-bars {
+    background: var(--paper-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+}
+
+.hero .dashboard-bar-row {
+    display: grid;
+    grid-template-columns: 90px 1fr;
+    align-items: center;
+    gap: 1rem;
+}
+
+.hero .dashboard-bar-label {
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+}
+
+.hero .dashboard-bar-track {
+    height: 10px;
+    background: var(--border-soft);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.hero .dashboard-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+}
+
+.hero .bar-food { background: #eb9c3e; }
+.hero .bar-travel { background: #4285f4; }
+.hero .bar-bills { background: #8b6fdb; }
+
+/* ------------------------------------------------------------------ */
+/* Video modal                                                         */
+/* ------------------------------------------------------------------ */
+
+.video-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.video-modal.is-open {
+    display: flex;
+}
+
+.video-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 15, 15, 0.75);
+}
+
+.video-modal-dialog {
+    position: relative;
+    width: 100%;
+    max-width: 860px;
+    background: var(--ink);
+    border-radius: var(--radius-md);
+    padding: 3rem 1rem 1rem;
+}
+
+.video-modal-close {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--paper);
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.video-modal-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.video-modal-frame {
+    position: relative;
+    width: 100%;
+    padding-top: 56.25%;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: #000;
+}
+
+.video-modal-frame iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* Responsive                                                          */
+/* ------------------------------------------------------------------ */
+
+@media (max-width: 700px) {
+    .hero .dashboard-stats {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .hero .hero-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .hero .hero-btn {
+        width: 100%;
+        text-align: center;
+    }
+}
