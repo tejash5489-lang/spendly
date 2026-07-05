@@ -72,7 +72,15 @@ def login():
 
     session["user_id"] = user["id"]
     session["user_name"] = user["name"]
-    return redirect(url_for("landing"))
+    return redirect(url_for("welcome"))
+
+
+@app.route("/welcome")
+def welcome():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    return render_template("welcome.html")
 
 
 @app.route("/terms")
