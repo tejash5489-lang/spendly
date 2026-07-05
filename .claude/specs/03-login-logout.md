@@ -25,11 +25,13 @@ who the current user is.
 - `GET /login` — renders the login form (already implemented, unchanged) —
   public
 - `POST /login` — validate submitted `email`/`password` against `users`; on
-  success start a session and redirect to `/`; on failure (missing fields,
-  unknown email, or wrong password) re-render `login.html` with a single
-  generic error — public
+  success start a session and redirect to `/welcome`; on failure (missing
+  fields, unknown email, or wrong password) re-render `login.html` with a
+  single generic error — public
 - `GET /logout` — clear the session and redirect to `/` — logged-in (safe to
   hit while logged out too; it will simply no-op and redirect)
+- `GET /welcome` — plain "Welcome back, {name}" page shown after a successful
+  login; redirects to `/login` if not authenticated — logged-in
 
 ## Database changes
 
@@ -38,7 +40,9 @@ No database changes. The existing `users` table (`id`, `name`, `email`,
 
 ## Templates
 
-**Create:** none
+**Create:**
+- `templates/welcome.html` — plain "Welcome back, {name}" page for the new
+  `/welcome` route.
 
 **Modify:**
 - `templates/base.html` — the nav currently always shows "Sign in" / "Get
@@ -60,7 +64,7 @@ No database changes. The existing `users` table (`id`, `name`, `email`,
     read `email`/`password` from `request.form`, validate both are present,
     look up the user by email via `get_db()`, verify the password with
     `check_password_hash`, and on success set `session["user_id"]` and
-    `session["user_name"]` then redirect to `/`. On any failure, re-render
+    `session["user_name"]` then redirect to `/welcome`. On any failure, re-render
     `login.html` with `error="Invalid email or password."` — use one generic
     message for "no such email" and "wrong password" so login can't be used
     to enumerate registered emails.
@@ -69,7 +73,8 @@ No database changes. The existing `users` table (`id`, `name`, `email`,
 
 ## Files to create
 
-No new files.
+- `templates/welcome.html` — plain "Welcome back, {{ session.get('user_name')
+  }}" page, extending `base.html`, rendered by the new `/welcome` route.
 
 ## New dependencies
 
@@ -93,8 +98,8 @@ No new dependencies. `check_password_hash` is already part of
 ## Definition of done
 
 - [ ] Submitting `/login` with a registered email and correct password
-      redirects to `/` and the nav now shows "Logout" instead of "Sign in" /
-      "Get started"
+      redirects to `/welcome` and the nav now shows "Logout" instead of
+      "Sign in" / "Get started"
 - [ ] Submitting `/login` with a registered email and wrong password
       re-renders `login.html` with "Invalid email or password." and no
       session is created
