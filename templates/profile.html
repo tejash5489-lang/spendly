@@ -48,6 +48,25 @@
             </div>
         </div>
 
+        <div class="profile-filter-bar">
+            <div class="profile-filter-presets">
+                <a href="{{ url_for('profile') }}"
+                   class="filter-pill{{ ' filter-pill-active' if active_preset == 'all_time' else '' }}">All Time</a>
+                <a href="{{ url_for('profile', start=presets.this_month[0], end=presets.this_month[1]) }}"
+                   class="filter-pill{{ ' filter-pill-active' if active_preset == 'this_month' else '' }}">This Month</a>
+                <a href="{{ url_for('profile', start=presets.three_months[0], end=presets.three_months[1]) }}"
+                   class="filter-pill{{ ' filter-pill-active' if active_preset == 'three_months' else '' }}">Last 3 Months</a>
+                <a href="{{ url_for('profile', start=presets.six_months[0], end=presets.six_months[1]) }}"
+                   class="filter-pill{{ ' filter-pill-active' if active_preset == 'six_months' else '' }}">Last 6 Months</a>
+            </div>
+            <form class="profile-filter-custom" method="get" action="{{ url_for('profile') }}">
+                <input type="date" name="start" class="form-input" value="{{ start }}" aria-label="From date">
+                <span class="profile-filter-to">to</span>
+                <input type="date" name="end" class="form-input" value="{{ end }}" aria-label="To date">
+                <button type="submit" class="btn-primary">Apply</button>
+            </form>
+        </div>
+
         <div class="profile-table-wrap">
             <h2 class="profile-subheading">Recent Transactions</h2>
             {% if transactions %}

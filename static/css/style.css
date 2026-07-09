@@ -668,6 +668,48 @@ a { color: inherit; text-decoration: none; }
     overflow-x: auto;
 }
 
+.profile-filter-bar {
+    background: var(--paper-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.profile-filter-presets { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+.filter-pill {
+    display: inline-block;
+    padding: 0.45rem 1rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--ink-soft);
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.filter-pill:hover { border-color: var(--ink); color: var(--ink); }
+
+.filter-pill-active {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--paper);
+}
+
+.profile-filter-custom { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+
+.profile-filter-custom .form-input { width: auto; }
+
+.profile-filter-to { color: var(--ink-muted); font-size: 0.85rem; }
+
 .profile-table {
     width: 100%;
     border-collapse: collapse;
