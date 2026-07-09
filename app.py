@@ -1,4 +1,7 @@
-from flask import Flask, redirect, render_template, session, url_for
+import calendar
+from datetime import date, datetime
+
+from flask import Flask, redirect, render_template, request, session, url_for
 
 from database.db import CATEGORIES, get_db, init_db, seed_db
 
@@ -53,15 +56,36 @@ def profile():
     if "user_id" not in session:
         return redirect(url_for("login"))
 
+    start = _parse_date(request.args.get("start"))
+    end = _parse_date(request.args.get("end"))
+    if start and end and start > end:
+        start = end = None
+
+    today = date.today()
+    this_month_start = date(today.year, today.month, 1)
+    presets = {
+        "this_month": (this_month_start.isoformat(), today.isoformat()),
+        "three_months": (_months_before(today, 3).isoformat(), today.isoformat()),
+        "six_months": (_months_before(today, 6).isoformat(), today.isoformat()),
+    }
+
+    if not start and not end:
+        active_preset = "all_time"
+    else:
+        active_preset = next(
+            (key for key, value in presets.items() if value == (start, end)),
+            None,
+        )
+
     conn = get_db()
     user_id = session["user_id"]
 
     user = conn.execute(
         "SELECT name, email, created_at FROM users WHERE id = ?", (user_id,)
     ).fetchone()
-    transactions = _get_recent_transactions(conn, user_id)
-    stats = _get_summary_stats(conn, user_id)
-    breakdown = _get_category_breakdown(conn, user_id)
+    transactions = _get_recent_transactions(conn, user_id, start, end)
+    stats = _get_summary_stats(conn, user_id, start, end)
+    breakdown = _get_category_breakdown(conn, user_id, start, end)
 
     conn.close()
 
@@ -72,45 +96,80 @@ def profile():
         stats=stats,
         breakdown=breakdown,
         categories=CATEGORIES,
+        start=start or "",
+        end=end or "",
+        presets=presets,
+        active_preset=active_preset,
     )
 
 
+def _parse_date(value):
+    if not value:
+        return None
+    try:
+        parsed = datetime.strptime(value, "%Y-%m-%d")
+    except ValueError:
+        return None
+    return parsed.date().isoformat()
+
+
+def _months_before(d, months):
+    month = d.month - months
+    year = d.year
+    while month <= 0:
+        month += 12
+        year -= 1
+    day = min(d.day, calendar.monthrange(year, month)[1])
+    return date(year, month, day)
+
+
+# Builds a `user_id = ? [AND date >= ?] [AND date <= ?]` clause with matching
+# bound params — start/end only ever reach SQL through these `?` placeholders.
+def _where_clause(user_id, start, end):
+    clauses = ["user_id = ?"]
+    params = [user_id]
+    if start:
+        clauses.append("date >= ?")
+        params.append(start)
+    if end:
+        clauses.append("date <= ?")
+        params.append(end)
+    return " AND ".join(clauses), params
+
+
 # --- SUBAGENT 1: transaction history --------------------------------- #
-def _get_recent_transactions(conn, user_id, limit=10):
-    return conn.execute(
-        """
+def _get_recent_transactions(conn, user_id, start=None, end=None, limit=10):
+    where, params = _where_clause(user_id, start, end)
+    query = f"""
         SELECT date, description, category, amount
         FROM expenses
-        WHERE user_id = ?
+        WHERE {where}
         ORDER BY date DESC
         LIMIT ?
-        """,
-        (user_id, limit),
-    ).fetchall()
+        """
+    return conn.execute(query, params + [limit]).fetchall()
 
 
 # --- SUBAGENT 2: summary stats ---------------------------------------- #
-def _get_summary_stats(conn, user_id):
-    totals = conn.execute(
-        """
+def _get_summary_stats(conn, user_id, start=None, end=None):
+    where, params = _where_clause(user_id, start, end)
+
+    totals_query = f"""
         SELECT COUNT(*) AS count, COALESCE(SUM(amount), 0) AS total
         FROM expenses
-        WHERE user_id = ?
-        """,
-        (user_id,),
-    ).fetchone()
-
-    top = conn.execute(
+        WHERE {where}
         """
+    totals = conn.execute(totals_query, params).fetchone()
+
+    top_query = f"""
         SELECT category, SUM(amount) AS total
         FROM expenses
-        WHERE user_id = ?
+        WHERE {where}
         GROUP BY category
         ORDER BY total DESC
         LIMIT 1
-        """,
-        (user_id,),
-    ).fetchone()
+        """
+    top = conn.execute(top_query, params).fetchone()
 
     return {
         "total": totals["total"],
@@ -120,17 +179,16 @@ def _get_summary_stats(conn, user_id):
 
 
 # --- SUBAGENT 3: category breakdown ------------------------------------ #
-def _get_category_breakdown(conn, user_id):
-    return conn.execute(
-        """
+def _get_category_breakdown(conn, user_id, start=None, end=None):
+    where, params = _where_clause(user_id, start, end)
+    query = f"""
         SELECT category, SUM(amount) AS total
         FROM expenses
-        WHERE user_id = ?
+        WHERE {where}
         GROUP BY category
         ORDER BY total DESC
-        """,
-        (user_id,),
-    ).fetchall()
+        """
+    return conn.execute(query, params).fetchall()
 
 
 # --- TEMPORARY: dev-only login shortcut for manual browser testing --- #
