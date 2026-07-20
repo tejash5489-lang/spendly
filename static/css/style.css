@@ -572,6 +572,11 @@ a { color: inherit; text-decoration: none; }
     margin-bottom: 2rem;
 }
 
+.profile-header-action {
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
 .profile-avatar {
     flex-shrink: 0;
     width: 64px;
