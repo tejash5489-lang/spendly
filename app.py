@@ -168,7 +168,7 @@ def _where_clause(user_id, start, end):
 def _get_recent_transactions(conn, user_id, start=None, end=None, limit=10):
     where, params = _where_clause(user_id, start, end)
     query = f"""
-        SELECT date, description, category, amount
+        SELECT id, date, description, category, amount
         FROM expenses
         WHERE {where}
         ORDER BY date DESC
@@ -279,9 +279,62 @@ def add_expense():
     )
 
 
-@app.route("/expenses/<int:id>/edit")
+@app.route("/expenses/<int:id>/edit", methods=["GET", "POST"])
 def edit_expense(id):
-    return "Edit expense — coming in Step 8"
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    conn = get_db()
+    expense = conn.execute(
+        "SELECT id, amount, category, date, description FROM expenses WHERE id = ? AND user_id = ?",
+        (id, session["user_id"]),
+    ).fetchone()
+
+    if expense is None:
+        conn.close()
+        return "Not found", 404
+
+    form_values = {
+        "amount": expense["amount"],
+        "category": expense["category"],
+        "date": expense["date"],
+        "description": expense["description"] or "",
+    }
+    error = None
+
+    if request.method == "POST":
+        form_values["amount"] = request.form.get("amount", "")
+        form_values["category"] = request.form.get("category", "")
+        form_values["date"] = request.form.get("date", "")
+        form_values["description"] = request.form.get("description", "").strip()
+
+        amount, error = _validate_expense_form(form_values)
+
+        if error is None:
+            conn.execute(
+                "UPDATE expenses SET amount = ?, category = ?, date = ?, description = ? "
+                "WHERE id = ? AND user_id = ?",
+                (
+                    amount,
+                    form_values["category"],
+                    form_values["date"],
+                    form_values["description"] or None,
+                    id,
+                    session["user_id"],
+                ),
+            )
+            conn.commit()
+            conn.close()
+            return redirect(url_for("profile"))
+
+    conn.close()
+    return render_template(
+        "edit_expense.html",
+        id=id,
+        categories=CATEGORIES,
+        error=error,
+        **form_values,
+    )
 
 
 @app.route("/expenses/<int:id>/delete")
