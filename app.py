@@ -337,9 +337,28 @@ def edit_expense(id):
     )
 
 
-@app.route("/expenses/<int:id>/delete")
+@app.route("/expenses/<int:id>/delete", methods=["POST"])
 def delete_expense(id):
-    return "Delete expense — coming in Step 9"
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    conn = get_db()
+    expense = conn.execute(
+        "SELECT id FROM expenses WHERE id = ? AND user_id = ?",
+        (id, session["user_id"]),
+    ).fetchone()
+
+    if expense is None:
+        conn.close()
+        return "Not found", 404
+
+    conn.execute(
+        "DELETE FROM expenses WHERE id = ? AND user_id = ?",
+        (id, session["user_id"]),
+    )
+    conn.commit()
+    conn.close()
+    return redirect(url_for("profile"))
 
 
 if __name__ == "__main__":
