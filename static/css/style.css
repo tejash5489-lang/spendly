@@ -750,6 +750,27 @@ a { color: inherit; text-decoration: none; }
 
 .table-action-link:hover { text-decoration: underline; }
 
+.table-actions-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.table-action-form {
+    display: inline;
+    margin: 0;
+}
+
+.table-action-form .table-action-link {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    cursor: pointer;
+}
+
+.table-action-danger { color: var(--danger); }
+
 .category-badge {
     display: inline-block;
     font-size: 0.7rem;
