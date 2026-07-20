@@ -16,6 +16,7 @@
                 <h1 class="profile-name">{{ user['name'] }}</h1>
                 <p class="profile-meta">{{ user['email'] }} &middot; Member since {{ user['created_at'] }}</p>
             </div>
+            <a href="{{ url_for('add_expense') }}" class="btn-primary profile-header-action">Add Expense</a>
         </div>
 
         <div class="profile-card">
