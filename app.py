@@ -103,6 +103,13 @@ def profile():
     )
 
 
+@app.route("/analytics")
+def analytics():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    return render_template("analytics.html")
+
+
 def _parse_date(value):
     if not value:
         return None

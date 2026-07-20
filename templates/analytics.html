@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics — Spendly{% endblock %}
+
+{% block content %}
+<section class="coming-soon-section">
+    <div class="coming-soon-card">
+        <div class="coming-soon-icon">◐</div>
+        <span class="coming-soon-badge">Coming Soon</span>
+        <h1 class="coming-soon-title">Analytics is on its way</h1>
+        <p class="coming-soon-subtitle">
+            We're building deeper insights into your spending — trends over
+            time, category comparisons, and monthly breakdowns, all in one view.
+        </p>
+        <ul class="coming-soon-features">
+            <li><span class="coming-soon-feature-icon">◎</span> Spending trends over time</li>
+            <li><span class="coming-soon-feature-icon">◷</span> Month-over-month comparisons</li>
+            <li><span class="coming-soon-feature-icon">₹</span> Deeper category breakdowns</li>
+        </ul>
+        <a href="{{ url_for('profile') }}" class="btn-primary">Back to Profile</a>
+    </div>
+</section>
+{% endblock %}
