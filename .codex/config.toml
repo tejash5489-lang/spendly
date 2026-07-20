@@ -1,0 +1,7 @@
+[mcp_servers.sqlite]
+command = "npx"
+args = [
+    "-y",
+    "@executeautomation/database-server",
+    "D:/expense-tracker/spendly.db",
+]

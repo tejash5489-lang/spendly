@@ -1,4 +1,5 @@
 import calendar
+import math
 from datetime import date, datetime
 
 from flask import Flask, redirect, render_template, request, session, url_for
@@ -103,6 +104,13 @@ def profile():
     )
 
 
+@app.route("/analytics")
+def analytics():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    return render_template("analytics.html")
+
+
 def _parse_date(value):
     if not value:
         return None
@@ -121,6 +129,25 @@ def _months_before(d, months):
         year -= 1
     day = min(d.day, calendar.monthrange(year, month)[1])
     return date(year, month, day)
+
+
+# Validates a submitted add-expense form. Returns (amount, error) where
+# amount is a finite positive float on success, or (None, message) on failure.
+def _validate_expense_form(form_values):
+    amount = None
+    try:
+        amount = float(form_values["amount"])
+    except ValueError:
+        pass
+
+    if amount is None or not math.isfinite(amount) or amount <= 0:
+        return None, "Enter a valid amount greater than 0."
+    if form_values["category"] not in CATEGORIES:
+        return None, "Please select a valid category."
+    if not _parse_date(form_values["date"]):
+        return None, "Please enter a valid date."
+
+    return amount, None
 
 
 # Builds a `user_id = ? [AND date >= ?] [AND date <= ?]` clause with matching
@@ -210,9 +237,46 @@ def dev_login_as(user_id):
     return redirect(url_for("profile"))
 
 
-@app.route("/expenses/add")
+@app.route("/expenses/add", methods=["GET", "POST"])
 def add_expense():
-    return "Add expense — coming in Step 7"
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    today = date.today().isoformat()
+    form_values = {"amount": "", "category": "", "date": today, "description": ""}
+    error = None
+
+    if request.method == "POST":
+        form_values["amount"] = request.form.get("amount", "")
+        form_values["category"] = request.form.get("category", "")
+        form_values["date"] = request.form.get("date", "")
+        form_values["description"] = request.form.get("description", "").strip()
+
+        amount, error = _validate_expense_form(form_values)
+
+        if error is None:
+            conn = get_db()
+            conn.execute(
+                "INSERT INTO expenses (user_id, amount, category, date, description) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (
+                    session["user_id"],
+                    amount,
+                    form_values["category"],
+                    form_values["date"],
+                    form_values["description"] or None,
+                ),
+            )
+            conn.commit()
+            conn.close()
+            return redirect(url_for("profile"))
+
+    return render_template(
+        "add_expense.html",
+        categories=CATEGORIES,
+        error=error,
+        **form_values,
+    )
 
 
 @app.route("/expenses/<int:id>/edit")
