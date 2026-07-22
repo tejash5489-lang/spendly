@@ -77,6 +77,7 @@
                         <th>Date</th>
                         <th>Description</th>
                         <th>Category</th>
+                        <th>Payment</th>
                         <th>Amount</th>
                         <th>Actions</th>
                     </tr>
@@ -89,6 +90,7 @@
                         <td>
                             <span class="category-badge {{ badge_classes[categories.index(txn['category']) % 4] }}">{{ txn['category'] }}</span>
                         </td>
+                        <td>{{ txn['payment_method'] }}</td>
                         <td class="profile-table-amount">&#8377;{{ "%.2f"|format(txn['amount']) }}</td>
                         <td class="table-actions-cell">
                             <a href="{{ url_for('edit_expense', id=txn['id']) }}" class="table-action-link">Edit</a>
