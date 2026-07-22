@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Add Income — Spendly{% endblock %}
+
+{% block content %}
+
+<section class="auth-section">
+    <div class="auth-container">
+
+        <div class="auth-header">
+            <h1 class="auth-title">Add income</h1>
+            <p class="auth-subtitle">Log money you received</p>
+        </div>
+
+        <div class="auth-card">
+            {% if error %}
+            <div class="auth-error">{{ error }}</div>
+            {% endif %}
+
+            <form method="POST" action="{{ url_for('add_income') }}">
+                <div class="form-group">
+                    <label for="amount">Amount (&#8377;)</label>
+                    <input type="number" id="amount" name="amount"
+                           class="form-input" step="0.01" min="0.01"
+                           value="{{ amount }}" required autofocus>
+                </div>
+                <div class="form-group">
+                    <label for="category">Category</label>
+                    <select id="category" name="category" class="form-input" required>
+                        <option value="" disabled {{ 'selected' if not category else '' }}>Choose a category</option>
+                        {% for c in income_categories %}
+                        <option value="{{ c }}" {{ 'selected' if c == category else '' }}>{{ c }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="account_id">Account</label>
+                    <select id="account_id" name="account_id" class="form-input" required>
+                        <option value="" disabled {{ 'selected' if not account_id else '' }}>Choose an account</option>
+                        {% for a in accounts %}
+                        <option value="{{ a['id'] }}" {{ 'selected' if a['id']|string == account_id else '' }}>{{ a['name'] }} ({{ a['type'] }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="date">Date</label>
+                    <input type="date" id="date" name="date"
+                           class="form-input" value="{{ date }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="description">Description (optional)</label>
+                    <input type="text" id="description" name="description"
+                           class="form-input" placeholder="e.g. July salary"
+                           value="{{ description }}">
+                </div>
+                <button type="submit" class="btn-submit">Add Income</button>
+            </form>
+        </div>
+
+        <p class="auth-switch">
+            <a href="{{ url_for('profile') }}">Back to profile</a>
+        </p>
+
+    </div>
+</section>
+
+{% endblock %}

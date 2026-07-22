@@ -12,6 +12,7 @@ CATEGORIES = ["Food", "Transport", "Bills", "Health", "Entertainment", "Shopping
 # Autocomplete suggestions only — account type is free text, not a fixed set.
 ACCOUNT_TYPES = ["Cash", "Wallet", "Bank"]
 PAYMENT_METHODS = ["Cash", "Card", "UPI"]
+INCOME_CATEGORIES = ["Salary", "Gift", "Refund", "Interest", "Other"]
 
 
 def get_db():
@@ -64,6 +65,20 @@ def init_db():
     if "payment_method" not in existing_columns:
         conn.execute("ALTER TABLE expenses ADD COLUMN payment_method TEXT NOT NULL DEFAULT 'Cash'")
 
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS income (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            amount REAL NOT NULL,
+            category TEXT NOT NULL,
+            date TEXT NOT NULL,
+            description TEXT,
+            account_id INTEGER NOT NULL REFERENCES accounts (id),
+            created_at TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    """)
+
     conn.commit()
     conn.close()
 
@@ -82,19 +97,19 @@ def seed_db():
     )
     user_id = cursor.lastrowid
 
-    # Starting balances are seeded post-deduction: each already accounts for
-    # the one sample expense below that's linked to it.
+    # Starting balances are seeded post-effect: each already accounts for the
+    # sample expenses (deducted) and sample income (credited) linked to it.
     cash_id = conn.execute(
         "INSERT INTO accounts (user_id, name, type, balance) VALUES (?, ?, ?, ?)",
         (user_id, "Cash", "Cash", 4550.00),
     ).lastrowid
     wallet_id = conn.execute(
         "INSERT INTO accounts (user_id, name, type, balance) VALUES (?, ?, ?, ?)",
-        (user_id, "Wallet", "Wallet", 880.00),
+        (user_id, "Wallet", "Wallet", 1080.00),
     ).lastrowid
     bank_id = conn.execute(
         "INSERT INTO accounts (user_id, name, type, balance) VALUES (?, ?, ?, ?)",
-        (user_id, "HDFC Bank", "Bank", 18500.00),
+        (user_id, "HDFC Bank", "Bank", 38500.00),
     ).lastrowid
 
     sample_expenses = [
@@ -112,5 +127,16 @@ def seed_db():
         "VALUES (?, ?, ?, ?, ?, ?, ?)",
         sample_expenses,
     )
+
+    sample_income = [
+        (user_id, 20000.00, "Salary", "2026-07-01", "July salary", bank_id),
+        (user_id, 200.00, "Refund", "2026-07-10", "Refund for return", wallet_id),
+    ]
+    conn.executemany(
+        "INSERT INTO income (user_id, amount, category, date, description, account_id) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        sample_income,
+    )
+
     conn.commit()
     conn.close()
