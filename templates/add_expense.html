@@ -34,6 +34,15 @@
                     </select>
                 </div>
                 <div class="form-group">
+                    <label for="payment_method">Payment method</label>
+                    <select id="payment_method" name="payment_method" class="form-input" required>
+                        <option value="" disabled {{ 'selected' if not payment_method else '' }}>Choose a payment method</option>
+                        {% for pm in payment_methods %}
+                        <option value="{{ pm }}" {{ 'selected' if pm == payment_method else '' }}>{{ pm }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
                     <label for="account_id">Account (optional)</label>
                     <select id="account_id" name="account_id" class="form-input">
                         <option value="" {{ 'selected' if not account_id else '' }}>None</option>

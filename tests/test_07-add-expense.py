@@ -122,6 +122,7 @@ def test_post_valid_expense_inserts_row_and_redirects_to_profile(logged_in_clien
         data={
             "amount": "250.50",
             "category": "Food",
+            "payment_method": "Cash",
             "date": "2026-07-18",
             "description": "Lunch with friends",
         },
@@ -152,6 +153,7 @@ def test_post_valid_expense_appears_on_profile_page(logged_in_client):
         data={
             "amount": "999.99",
             "category": "Shopping",
+            "payment_method": "Cash",
             "date": "2026-07-19",
             "description": "New shoes for the run",
         },
@@ -173,6 +175,7 @@ def test_post_valid_expense_does_not_render_form_directly(logged_in_client):
         data={
             "amount": "42",
             "category": "Other",
+            "payment_method": "Cash",
             "date": "2026-07-11",
             "description": "",
         },
@@ -344,6 +347,7 @@ def test_post_without_description_succeeds(logged_in_client, app_module):
         data={
             "amount": "75",
             "category": "Transport",
+            "payment_method": "Cash",
             "date": "2026-07-17",
             "description": "",
         },
@@ -371,6 +375,7 @@ def test_post_missing_description_field_entirely_succeeds(logged_in_client, app_
         data={
             "amount": "60",
             "category": "Bills",
+            "payment_method": "Cash",
             "date": "2026-07-16",
         },
     )
@@ -392,6 +397,7 @@ def test_inserted_row_user_id_comes_from_session_not_client_input(logged_in_clie
             "user_id": "999999",
             "amount": "88",
             "category": "Entertainment",
+            "payment_method": "Cash",
             "date": "2026-07-14",
             "description": "Injected user_id attempt",
         },
@@ -434,6 +440,7 @@ def test_expense_added_by_one_user_is_isolated_from_another(app_module):
             data={
                 "amount": "321",
                 "category": "Other",
+                "payment_method": "Cash",
                 "date": "2026-07-13",
                 "description": "Second user's own expense",
             },

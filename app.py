@@ -5,7 +5,7 @@ from datetime import date, datetime
 from flask import Flask, redirect, render_template, request, session, url_for
 from werkzeug.security import generate_password_hash
 
-from database.db import ACCOUNT_TYPES, CATEGORIES, get_db, init_db, seed_db
+from database.db import ACCOUNT_TYPES, CATEGORIES, PAYMENT_METHODS, get_db, init_db, seed_db
 
 app = Flask(__name__)
 app.secret_key = "dev-secret-key-change-in-production"
@@ -184,6 +184,8 @@ def _validate_expense_form(form_values):
         return None, "Enter a valid amount greater than 0."
     if form_values["category"] not in CATEGORIES:
         return None, "Please select a valid category."
+    if form_values["payment_method"] not in PAYMENT_METHODS:
+        return None, "Please select a valid payment method."
     if not _parse_date(form_values["date"]):
         return None, "Please enter a valid date."
 
@@ -238,7 +240,7 @@ def _where_clause(user_id, start, end):
 def _get_recent_transactions(conn, user_id, start=None, end=None, limit=10):
     where, params = _where_clause(user_id, start, end)
     query = f"""
-        SELECT id, date, description, category, amount
+        SELECT id, date, description, category, amount, payment_method
         FROM expenses
         WHERE {where}
         ORDER BY date DESC
@@ -316,6 +318,7 @@ def add_expense():
     form_values = {
         "amount": "",
         "category": "",
+        "payment_method": "",
         "account_id": "",
         "date": today,
         "description": "",
@@ -327,6 +330,7 @@ def add_expense():
     if request.method == "POST":
         form_values["amount"] = request.form.get("amount", "")
         form_values["category"] = request.form.get("category", "")
+        form_values["payment_method"] = request.form.get("payment_method", "")
         form_values["account_id"] = request.form.get("account_id", "")
         form_values["date"] = request.form.get("date", "")
         form_values["description"] = request.form.get("description", "").strip()
@@ -339,12 +343,13 @@ def add_expense():
 
         if error is None:
             conn.execute(
-                "INSERT INTO expenses (user_id, amount, category, date, description, account_id) "
-                "VALUES (?, ?, ?, ?, ?, ?)",
+                "INSERT INTO expenses (user_id, amount, category, payment_method, date, description, account_id) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?)",
                 (
                     session["user_id"],
                     amount,
                     form_values["category"],
+                    form_values["payment_method"],
                     form_values["date"],
                     form_values["description"] or None,
                     account_id,
@@ -364,6 +369,7 @@ def add_expense():
     return render_template(
         "add_expense.html",
         categories=CATEGORIES,
+        payment_methods=PAYMENT_METHODS,
         accounts=accounts,
         error=error,
         **form_values,
@@ -377,7 +383,7 @@ def edit_expense(id):
 
     conn = get_db()
     expense = conn.execute(
-        "SELECT id, amount, category, date, description, account_id "
+        "SELECT id, amount, category, payment_method, date, description, account_id "
         "FROM expenses WHERE id = ? AND user_id = ?",
         (id, session["user_id"]),
     ).fetchone()
@@ -389,6 +395,7 @@ def edit_expense(id):
     form_values = {
         "amount": expense["amount"],
         "category": expense["category"],
+        "payment_method": expense["payment_method"],
         "account_id": str(expense["account_id"]) if expense["account_id"] is not None else "",
         "date": expense["date"],
         "description": expense["description"] or "",
@@ -398,6 +405,7 @@ def edit_expense(id):
     if request.method == "POST":
         form_values["amount"] = request.form.get("amount", "")
         form_values["category"] = request.form.get("category", "")
+        form_values["payment_method"] = request.form.get("payment_method", "")
         form_values["account_id"] = request.form.get("account_id", "")
         form_values["date"] = request.form.get("date", "")
         form_values["description"] = request.form.get("description", "").strip()
@@ -413,11 +421,12 @@ def edit_expense(id):
             old_amount = expense["amount"]
 
             conn.execute(
-                "UPDATE expenses SET amount = ?, category = ?, date = ?, description = ?, account_id = ? "
-                "WHERE id = ? AND user_id = ?",
+                "UPDATE expenses SET amount = ?, category = ?, payment_method = ?, date = ?, description = ?, "
+                "account_id = ? WHERE id = ? AND user_id = ?",
                 (
                     amount,
                     form_values["category"],
+                    form_values["payment_method"],
                     form_values["date"],
                     form_values["description"] or None,
                     account_id,
@@ -445,6 +454,7 @@ def edit_expense(id):
         "edit_expense.html",
         id=id,
         categories=CATEGORIES,
+        payment_methods=PAYMENT_METHODS,
         accounts=accounts,
         error=error,
         **form_values,

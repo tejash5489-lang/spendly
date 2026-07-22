@@ -11,6 +11,7 @@ DB_PATH = os.path.join(BASE_DIR, "spendly.db")
 CATEGORIES = ["Food", "Transport", "Bills", "Health", "Entertainment", "Shopping", "Other"]
 # Autocomplete suggestions only — account type is free text, not a fixed set.
 ACCOUNT_TYPES = ["Cash", "Wallet", "Bank"]
+PAYMENT_METHODS = ["Cash", "Card", "UPI"]
 
 
 def get_db():
@@ -48,6 +49,7 @@ def init_db():
             user_id INTEGER NOT NULL,
             amount REAL NOT NULL,
             category TEXT NOT NULL,
+            payment_method TEXT NOT NULL DEFAULT 'Cash',
             date TEXT NOT NULL,
             description TEXT,
             account_id INTEGER REFERENCES accounts (id),
@@ -59,6 +61,8 @@ def init_db():
     existing_columns = {row["name"] for row in conn.execute("PRAGMA table_info(expenses)").fetchall()}
     if "account_id" not in existing_columns:
         conn.execute("ALTER TABLE expenses ADD COLUMN account_id INTEGER REFERENCES accounts (id)")
+    if "payment_method" not in existing_columns:
+        conn.execute("ALTER TABLE expenses ADD COLUMN payment_method TEXT NOT NULL DEFAULT 'Cash'")
 
     conn.commit()
     conn.close()
@@ -94,18 +98,18 @@ def seed_db():
     ).lastrowid
 
     sample_expenses = [
-        (user_id, 450.00, "Food", "2026-07-01", "Groceries for the week", cash_id),
-        (user_id, 120.00, "Transport", "2026-07-02", "Auto fare", wallet_id),
-        (user_id, 1500.00, "Bills", "2026-07-03", "Electricity bill", bank_id),
-        (user_id, 800.00, "Health", "2026-07-05", "Pharmacy", None),
-        (user_id, 600.00, "Entertainment", "2026-07-08", "Movie tickets", None),
-        (user_id, 2200.00, "Shopping", "2026-07-12", "New shoes", None),
-        (user_id, 250.00, "Other", "2026-07-15", "Miscellaneous", None),
-        (user_id, 350.00, "Food", "2026-07-20", "Dinner with friends", None),
+        (user_id, 450.00, "Food", "2026-07-01", "Groceries for the week", "Cash", cash_id),
+        (user_id, 120.00, "Transport", "2026-07-02", "Auto fare", "UPI", wallet_id),
+        (user_id, 1500.00, "Bills", "2026-07-03", "Electricity bill", "Card", bank_id),
+        (user_id, 800.00, "Health", "2026-07-05", "Pharmacy", "Card", None),
+        (user_id, 600.00, "Entertainment", "2026-07-08", "Movie tickets", "UPI", None),
+        (user_id, 2200.00, "Shopping", "2026-07-12", "New shoes", "Card", None),
+        (user_id, 250.00, "Other", "2026-07-15", "Miscellaneous", "Cash", None),
+        (user_id, 350.00, "Food", "2026-07-20", "Dinner with friends", "UPI", None),
     ]
     conn.executemany(
-        "INSERT INTO expenses (user_id, amount, category, date, description, account_id) "
-        "VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO expenses (user_id, amount, category, date, description, payment_method, account_id) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?)",
         sample_expenses,
     )
     conn.commit()
