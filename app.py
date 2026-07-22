@@ -5,7 +5,7 @@ from datetime import date, datetime
 from flask import Flask, redirect, render_template, request, session, url_for
 from werkzeug.security import generate_password_hash
 
-from database.db import CATEGORIES, get_db, init_db, seed_db
+from database.db import ACCOUNT_TYPES, CATEGORIES, get_db, init_db, seed_db
 
 app = Flask(__name__)
 app.secret_key = "dev-secret-key-change-in-production"
@@ -190,6 +190,36 @@ def _validate_expense_form(form_values):
     return amount, None
 
 
+def _get_accounts(conn, user_id):
+    return conn.execute(
+        "SELECT id, name, type, balance FROM accounts WHERE user_id = ? ORDER BY id",
+        (user_id,),
+    ).fetchall()
+
+
+# Resolves a submitted account_id form value. Returns (account_id, error)
+# where account_id is None if the field was left blank, or an int belonging
+# to user_id on success. Any invalid/unowned value yields the same generic
+# error, so a nonexistent id can't be distinguished from someone else's.
+def _resolve_account_id(conn, user_id, raw):
+    raw = (raw or "").strip()
+    if not raw:
+        return None, None
+
+    try:
+        account_id = int(raw)
+    except ValueError:
+        return None, "Please select a valid account."
+
+    owned = conn.execute(
+        "SELECT id FROM accounts WHERE id = ? AND user_id = ?", (account_id, user_id)
+    ).fetchone()
+    if owned is None:
+        return None, "Please select a valid account."
+
+    return account_id, None
+
+
 # Builds a `user_id = ? [AND date >= ?] [AND date <= ?]` clause with matching
 # bound params — start/end only ever reach SQL through these `?` placeholders.
 def _where_clause(user_id, start, end):
@@ -283,37 +313,58 @@ def add_expense():
         return redirect(url_for("login"))
 
     today = date.today().isoformat()
-    form_values = {"amount": "", "category": "", "date": today, "description": ""}
+    form_values = {
+        "amount": "",
+        "category": "",
+        "account_id": "",
+        "date": today,
+        "description": "",
+    }
     error = None
+
+    conn = get_db()
 
     if request.method == "POST":
         form_values["amount"] = request.form.get("amount", "")
         form_values["category"] = request.form.get("category", "")
+        form_values["account_id"] = request.form.get("account_id", "")
         form_values["date"] = request.form.get("date", "")
         form_values["description"] = request.form.get("description", "").strip()
 
         amount, error = _validate_expense_form(form_values)
 
+        account_id = None
         if error is None:
-            conn = get_db()
+            account_id, error = _resolve_account_id(conn, session["user_id"], form_values["account_id"])
+
+        if error is None:
             conn.execute(
-                "INSERT INTO expenses (user_id, amount, category, date, description) "
-                "VALUES (?, ?, ?, ?, ?)",
+                "INSERT INTO expenses (user_id, amount, category, date, description, account_id) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
                 (
                     session["user_id"],
                     amount,
                     form_values["category"],
                     form_values["date"],
                     form_values["description"] or None,
+                    account_id,
                 ),
             )
+            if account_id is not None:
+                conn.execute(
+                    "UPDATE accounts SET balance = balance - ? WHERE id = ? AND user_id = ?",
+                    (amount, account_id, session["user_id"]),
+                )
             conn.commit()
             conn.close()
             return redirect(url_for("profile"))
 
+    accounts = _get_accounts(conn, session["user_id"])
+    conn.close()
     return render_template(
         "add_expense.html",
         categories=CATEGORIES,
+        accounts=accounts,
         error=error,
         **form_values,
     )
@@ -326,7 +377,8 @@ def edit_expense(id):
 
     conn = get_db()
     expense = conn.execute(
-        "SELECT id, amount, category, date, description FROM expenses WHERE id = ? AND user_id = ?",
+        "SELECT id, amount, category, date, description, account_id "
+        "FROM expenses WHERE id = ? AND user_id = ?",
         (id, session["user_id"]),
     ).fetchone()
 
@@ -337,6 +389,7 @@ def edit_expense(id):
     form_values = {
         "amount": expense["amount"],
         "category": expense["category"],
+        "account_id": str(expense["account_id"]) if expense["account_id"] is not None else "",
         "date": expense["date"],
         "description": expense["description"] or "",
     }
@@ -345,33 +398,54 @@ def edit_expense(id):
     if request.method == "POST":
         form_values["amount"] = request.form.get("amount", "")
         form_values["category"] = request.form.get("category", "")
+        form_values["account_id"] = request.form.get("account_id", "")
         form_values["date"] = request.form.get("date", "")
         form_values["description"] = request.form.get("description", "").strip()
 
         amount, error = _validate_expense_form(form_values)
 
+        account_id = None
         if error is None:
+            account_id, error = _resolve_account_id(conn, session["user_id"], form_values["account_id"])
+
+        if error is None:
+            old_account_id = expense["account_id"]
+            old_amount = expense["amount"]
+
             conn.execute(
-                "UPDATE expenses SET amount = ?, category = ?, date = ?, description = ? "
+                "UPDATE expenses SET amount = ?, category = ?, date = ?, description = ?, account_id = ? "
                 "WHERE id = ? AND user_id = ?",
                 (
                     amount,
                     form_values["category"],
                     form_values["date"],
                     form_values["description"] or None,
+                    account_id,
                     id,
                     session["user_id"],
                 ),
             )
+            if old_account_id is not None:
+                conn.execute(
+                    "UPDATE accounts SET balance = balance + ? WHERE id = ? AND user_id = ?",
+                    (old_amount, old_account_id, session["user_id"]),
+                )
+            if account_id is not None:
+                conn.execute(
+                    "UPDATE accounts SET balance = balance - ? WHERE id = ? AND user_id = ?",
+                    (amount, account_id, session["user_id"]),
+                )
             conn.commit()
             conn.close()
             return redirect(url_for("profile"))
 
+    accounts = _get_accounts(conn, session["user_id"])
     conn.close()
     return render_template(
         "edit_expense.html",
         id=id,
         categories=CATEGORIES,
+        accounts=accounts,
         error=error,
         **form_values,
     )
@@ -384,7 +458,7 @@ def delete_expense(id):
 
     conn = get_db()
     expense = conn.execute(
-        "SELECT id FROM expenses WHERE id = ? AND user_id = ?",
+        "SELECT id, amount, account_id FROM expenses WHERE id = ? AND user_id = ?",
         (id, session["user_id"]),
     ).fetchone()
 
@@ -396,9 +470,102 @@ def delete_expense(id):
         "DELETE FROM expenses WHERE id = ? AND user_id = ?",
         (id, session["user_id"]),
     )
+    if expense["account_id"] is not None:
+        conn.execute(
+            "UPDATE accounts SET balance = balance + ? WHERE id = ? AND user_id = ?",
+            (expense["amount"], expense["account_id"], session["user_id"]),
+        )
     conn.commit()
     conn.close()
     return redirect(url_for("profile"))
+
+
+@app.route("/accounts", methods=["GET", "POST"])
+def accounts():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    error = None
+    conn = get_db()
+
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        type_ = request.form.get("type", "").strip()
+        raw_balance = request.form.get("balance", "")
+
+        balance = None
+        try:
+            balance = float(raw_balance)
+        except ValueError:
+            pass
+
+        if not name:
+            error = "Please enter an account name."
+        elif not type_:
+            error = "Please enter an account type."
+        elif balance is None or not math.isfinite(balance):
+            error = "Enter a valid starting balance."
+
+        if error is None:
+            conn.execute(
+                "INSERT INTO accounts (user_id, name, type, balance) VALUES (?, ?, ?, ?)",
+                (session["user_id"], name, type_, balance),
+            )
+            conn.commit()
+            conn.close()
+            return redirect(url_for("accounts"))
+
+    accounts_list = _get_accounts(conn, session["user_id"])
+    conn.close()
+    return render_template(
+        "accounts.html",
+        accounts=accounts_list,
+        account_types=ACCOUNT_TYPES,
+        error=error,
+    )
+
+
+@app.route("/accounts/<int:id>/add-funds", methods=["POST"])
+def add_funds(id):
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    conn = get_db()
+    account = conn.execute(
+        "SELECT id FROM accounts WHERE id = ? AND user_id = ?", (id, session["user_id"])
+    ).fetchone()
+
+    if account is None:
+        conn.close()
+        return "Not found", 404
+
+    error = None
+    amount = None
+    try:
+        amount = float(request.form.get("amount", ""))
+    except ValueError:
+        pass
+
+    if amount is None or not math.isfinite(amount) or amount <= 0:
+        error = "Enter a valid amount greater than 0."
+
+    if error is None:
+        conn.execute(
+            "UPDATE accounts SET balance = balance + ? WHERE id = ? AND user_id = ?",
+            (amount, id, session["user_id"]),
+        )
+        conn.commit()
+        conn.close()
+        return redirect(url_for("accounts"))
+
+    accounts_list = _get_accounts(conn, session["user_id"])
+    conn.close()
+    return render_template(
+        "accounts.html",
+        accounts=accounts_list,
+        account_types=ACCOUNT_TYPES,
+        error=error,
+    )
 
 
 if __name__ == "__main__":

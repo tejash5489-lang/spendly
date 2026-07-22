@@ -761,6 +761,17 @@ a { color: inherit; text-decoration: none; }
     margin: 0;
 }
 
+.table-inline-form {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.table-inline-form .form-input {
+    width: 6.5rem;
+    padding: 0.4rem 0.6rem;
+}
+
 .table-action-form .table-action-link {
     background: none;
     border: none;
