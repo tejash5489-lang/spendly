@@ -54,15 +54,15 @@ Do not add "remember me" tokens, password reset, or email verification — out o
 Do not add a separate `/welcome` page — `/profile` is the post-login destination
 
 Definition of done
-- [ ] Visiting `/login` with `GET` still renders the form exactly as before (no regression)
-- [ ] Submitting valid credentials (`demo@spendly.com` / `demo123`) sets `session["user_id"]` and `session["user_name"]` and redirects to `/profile`
-- [ ] Submitting a wrong password shows "Invalid email or password." and does not set the session
-- [ ] Submitting an email that doesn't exist shows the same generic "Invalid email or password." error (indistinguishable from a wrong-password response)
-- [ ] Submitting an empty email or password shows the same generic error
-- [ ] The rejected-submission form re-populates `email` but never re-populates `password`
-- [ ] Visiting `/logout` while logged in clears the session and redirects to `/`
-- [ ] After logout, the nav bar shows "Sign in" / "Get started" again instead of "Profile" / "Analytics" / "Logout"
-- [ ] Visiting `/logout` while already logged out does not error, and still redirects to `/`
-- [ ] `/profile`, `/analytics`, and `/expenses/*` routes redirect anonymous visitors to `/login` exactly as before (no regression from removing the dev-login shortcut)
-- [ ] `/dev/login-as/<id>` no longer exists (404 on any id)
-- [ ] No hex colour values appear in any touched code (no template changes expected, but the rule holds if any are touched)
+- [x] Visiting `/login` with `GET` still renders the form exactly as before (no regression)
+- [x] Submitting valid credentials (`demo@spendly.com` / `demo123`) sets `session["user_id"]` and `session["user_name"]` and redirects to `/profile`
+- [x] Submitting a wrong password shows "Invalid email or password." and does not set the session
+- [x] Submitting an email that doesn't exist shows the same generic "Invalid email or password." error (indistinguishable from a wrong-password response)
+- [x] Submitting an empty email or password shows the same generic error
+- [x] The rejected-submission form re-populates `email` but never re-populates `password`
+- [x] Visiting `/logout` while logged in clears the session and redirects to `/`
+- [x] After logout, the nav bar shows "Sign in" / "Get started" again instead of "Profile" / "Analytics" / "Logout"
+- [x] Visiting `/logout` while already logged out does not error, and still redirects to `/`
+- [x] `/profile`, `/analytics`, and `/expenses/*` routes redirect anonymous visitors to `/login` exactly as before (no regression from removing the dev-login shortcut)
+- [x] `/dev/login-as/<id>` no longer exists (404 on any id)
+- [x] No hex colour values appear in any touched code (no template changes expected, but the rule holds if any are touched)

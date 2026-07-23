@@ -112,10 +112,6 @@ def privacy():
     return render_template("privacy.html")
 
 
-# ------------------------------------------------------------------ #
-# Placeholder routes — students will implement these                  #
-# ------------------------------------------------------------------ #
-
 @app.route("/logout")
 def logout():
     session.clear()
