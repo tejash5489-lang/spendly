@@ -3,7 +3,7 @@ import math
 from datetime import date, datetime
 
 from flask import Flask, redirect, render_template, request, session, url_for
-from werkzeug.security import generate_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from database.db import (
     ACCOUNT_TYPES,
@@ -76,9 +76,30 @@ def register():
     return redirect(url_for("login"))
 
 
-@app.route("/login")
+@app.route("/login", methods=["GET", "POST"])
 def login():
-    return render_template("login.html")
+    if request.method == "GET":
+        return render_template("login.html")
+
+    email = request.form.get("email", "").strip()
+    password = request.form.get("password", "")
+    error = "Invalid email or password."
+
+    if not email or not password:
+        return render_template("login.html", error=error, email=email)
+
+    conn = get_db()
+    user = conn.execute(
+        "SELECT id, name, password_hash FROM users WHERE email = ?", (email,)
+    ).fetchone()
+    conn.close()
+
+    if user is None or not check_password_hash(user["password_hash"], password):
+        return render_template("login.html", error=error, email=email)
+
+    session["user_id"] = user["id"]
+    session["user_name"] = user["name"]
+    return redirect(url_for("profile"))
 
 
 @app.route("/terms")
@@ -91,13 +112,10 @@ def privacy():
     return render_template("privacy.html")
 
 
-# ------------------------------------------------------------------ #
-# Placeholder routes — students will implement these                  #
-# ------------------------------------------------------------------ #
-
 @app.route("/logout")
 def logout():
-    return "Logout — coming in Step 3"
+    session.clear()
+    return redirect(url_for("landing"))
 
 
 @app.route("/profile")
@@ -363,25 +381,6 @@ def _get_category_breakdown(conn, user_id, start=None, end=None):
         ORDER BY total DESC
         """
     return conn.execute(query, params).fetchall()
-
-
-# --- TEMPORARY: dev-only login shortcut for manual browser testing --- #
-# Not part of the spec — remove before this branch is considered done.
-@app.route("/dev/login-as/<int:user_id>")
-def dev_login_as(user_id):
-    if not app.debug:
-        return "Not available", 404
-
-    conn = get_db()
-    user = conn.execute("SELECT id, name FROM users WHERE id = ?", (user_id,)).fetchone()
-    conn.close()
-
-    if user is None:
-        return f"No user with id {user_id}", 404
-
-    session["user_id"] = user["id"]
-    session["user_name"] = user["name"]
-    return redirect(url_for("profile"))
 
 
 @app.route("/expenses/add", methods=["GET", "POST"])
