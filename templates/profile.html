@@ -17,6 +17,7 @@
                 <p class="profile-meta">{{ user['email'] }} &middot; Member since {{ user['created_at'] }}</p>
             </div>
             <a href="{{ url_for('add_expense') }}" class="btn-primary profile-header-action">Add Expense</a>
+            <a href="{{ url_for('add_income') }}" class="btn-primary profile-header-action">Add Income</a>
         </div>
 
         <div class="profile-card">
@@ -40,6 +41,14 @@
                 <span class="profile-stat-value">&#8377;{{ "%.2f"|format(stats.total) }}</span>
             </div>
             <div class="profile-stat">
+                <span class="profile-stat-label">Total Income</span>
+                <span class="profile-stat-value">&#8377;{{ "%.2f"|format(stats.total_income) }}</span>
+            </div>
+            <div class="profile-stat">
+                <span class="profile-stat-label">Net Balance</span>
+                <span class="profile-stat-value{{ ' profile-stat-value-negative' if stats.net_balance < 0 else '' }}">&#8377;{{ "%.2f"|format(stats.net_balance) }}</span>
+            </div>
+            <div class="profile-stat">
                 <span class="profile-stat-label">Transactions</span>
                 <span class="profile-stat-value">{{ stats.count }}</span>
             </div>
@@ -47,6 +56,33 @@
                 <span class="profile-stat-label">Top Category</span>
                 <span class="profile-stat-value">{{ stats.top_category or "—" }}</span>
             </div>
+        </div>
+
+        <div class="profile-table-wrap">
+            <h2 class="profile-subheading">Account Balances</h2>
+            {% if accounts %}
+            <table class="profile-table">
+                <thead>
+                    <tr>
+                        <th>Account</th>
+                        <th>Type</th>
+                        <th>Balance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for account in accounts %}
+                    <tr>
+                        <td>{{ account['name'] }}</td>
+                        <td>{{ account['type'] }}</td>
+                        <td class="profile-table-amount{{ ' profile-stat-value-negative' if account['balance'] < 0 else '' }}">&#8377;{{ "%.2f"|format(account['balance']) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <p class="profile-empty"><a href="{{ url_for('accounts') }}">Manage accounts &rarr;</a></p>
+            {% else %}
+            <p class="profile-empty">No accounts yet. <a href="{{ url_for('accounts') }}">Add one</a>.</p>
+            {% endif %}
         </div>
 
         <div class="profile-filter-bar">
@@ -77,6 +113,8 @@
                         <th>Date</th>
                         <th>Description</th>
                         <th>Category</th>
+                        <th>Payment</th>
+                        <th>Account</th>
                         <th>Amount</th>
                         <th>Actions</th>
                     </tr>
@@ -89,6 +127,8 @@
                         <td>
                             <span class="category-badge {{ badge_classes[categories.index(txn['category']) % 4] }}">{{ txn['category'] }}</span>
                         </td>
+                        <td>{{ txn['payment_method'] }}</td>
+                        <td>{{ txn['account_name'] or "—" }}</td>
                         <td class="profile-table-amount">&#8377;{{ "%.2f"|format(txn['amount']) }}</td>
                         <td class="table-actions-cell">
                             <a href="{{ url_for('edit_expense', id=txn['id']) }}" class="table-action-link">Edit</a>
@@ -102,6 +142,45 @@
             </table>
             {% else %}
             <p class="profile-empty">No transactions yet.</p>
+            {% endif %}
+        </div>
+
+        <div class="profile-table-wrap">
+            <h2 class="profile-subheading">Recent Income</h2>
+            {% if income %}
+            <table class="profile-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Description</th>
+                        <th>Category</th>
+                        <th>Account</th>
+                        <th>Amount</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in income %}
+                    <tr>
+                        <td>{{ row['date'] }}</td>
+                        <td>{{ row['description'] or "—" }}</td>
+                        <td>
+                            <span class="category-badge {{ badge_classes[income_categories.index(row['category']) % 4] }}">{{ row['category'] }}</span>
+                        </td>
+                        <td>{{ row['account_name'] }}</td>
+                        <td class="profile-table-amount">&#8377;{{ "%.2f"|format(row['amount']) }}</td>
+                        <td class="table-actions-cell">
+                            <a href="{{ url_for('edit_income', id=row['id']) }}" class="table-action-link">Edit</a>
+                            <form method="POST" action="{{ url_for('delete_income', id=row['id']) }}" class="table-action-form" onsubmit="return confirm('Delete this income entry?');">
+                                <button type="submit" class="table-action-link table-action-danger">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="profile-empty">No income yet.</p>
             {% endif %}
         </div>
 

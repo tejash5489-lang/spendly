@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Edit Expense — Spendly{% endblock %}
+{% block title %}Edit Income — Spendly{% endblock %}
 
 {% block content %}
 
@@ -8,8 +8,8 @@
     <div class="auth-container">
 
         <div class="auth-header">
-            <h1 class="auth-title">Edit an expense</h1>
-            <p class="auth-subtitle">Update your transaction</p>
+            <h1 class="auth-title">Edit income</h1>
+            <p class="auth-subtitle">Update this transaction</p>
         </div>
 
         <div class="auth-card">
@@ -17,7 +17,7 @@
             <div class="auth-error">{{ error }}</div>
             {% endif %}
 
-            <form method="POST" action="{{ url_for('edit_expense', id=id) }}">
+            <form method="POST" action="{{ url_for('edit_income', id=id) }}">
                 <div class="form-group">
                     <label for="amount">Amount (&#8377;)</label>
                     <input type="number" id="amount" name="amount"
@@ -28,24 +28,15 @@
                     <label for="category">Category</label>
                     <select id="category" name="category" class="form-input" required>
                         <option value="" disabled {{ 'selected' if not category else '' }}>Choose a category</option>
-                        {% for c in categories %}
+                        {% for c in income_categories %}
                         <option value="{{ c }}" {{ 'selected' if c == category else '' }}>{{ c }}</option>
                         {% endfor %}
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="payment_method">Payment method</label>
-                    <select id="payment_method" name="payment_method" class="form-input" required>
-                        <option value="" disabled {{ 'selected' if not payment_method else '' }}>Choose a payment method</option>
-                        {% for pm in payment_methods %}
-                        <option value="{{ pm }}" {{ 'selected' if pm == payment_method else '' }}>{{ pm }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="account_id">Account (optional)</label>
-                    <select id="account_id" name="account_id" class="form-input">
-                        <option value="" {{ 'selected' if not account_id else '' }}>None</option>
+                    <label for="account_id">Account</label>
+                    <select id="account_id" name="account_id" class="form-input" required>
+                        <option value="" disabled {{ 'selected' if not account_id else '' }}>Choose an account</option>
                         {% for a in accounts %}
                         <option value="{{ a['id'] }}" {{ 'selected' if a['id']|string == account_id else '' }}>{{ a['name'] }} ({{ a['type'] }})</option>
                         {% endfor %}
@@ -59,7 +50,7 @@
                 <div class="form-group">
                     <label for="description">Description (optional)</label>
                     <input type="text" id="description" name="description"
-                           class="form-input" placeholder="e.g. Groceries for the week"
+                           class="form-input" placeholder="e.g. July salary"
                            value="{{ description }}">
                 </div>
                 <button type="submit" class="btn-submit">Save Changes</button>

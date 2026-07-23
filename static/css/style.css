@@ -626,7 +626,7 @@ a { color: inherit; text-decoration: none; }
 
 .profile-stats {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 1rem;
     margin-bottom: 2rem;
 }
@@ -651,6 +651,10 @@ a { color: inherit; text-decoration: none; }
     font-weight: 700;
     font-size: 1.5rem;
     color: var(--ink);
+}
+
+.profile-stat-value-negative {
+    color: var(--danger);
 }
 
 .profile-subheading {
@@ -759,6 +763,17 @@ a { color: inherit; text-decoration: none; }
 .table-action-form {
     display: inline;
     margin: 0;
+}
+
+.table-inline-form {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.table-inline-form .form-input {
+    width: 6.5rem;
+    padding: 0.4rem 0.6rem;
 }
 
 .table-action-form .table-action-link {
