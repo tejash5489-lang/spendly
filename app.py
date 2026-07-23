@@ -136,6 +136,7 @@ def profile():
     income = _get_recent_income(conn, user_id, start, end)
     stats = _get_summary_stats(conn, user_id, start, end)
     breakdown = _get_category_breakdown(conn, user_id, start, end)
+    accounts = _get_accounts(conn, user_id)
 
     conn.close()
 
@@ -146,6 +147,7 @@ def profile():
         income=income,
         stats=stats,
         breakdown=breakdown,
+        accounts=accounts,
         categories=CATEGORIES,
         income_categories=INCOME_CATEGORIES,
         start=start or "",
@@ -230,14 +232,31 @@ def _get_accounts(conn, user_id):
     ).fetchall()
 
 
+NEW_ACCOUNT_OPTION = "__new__"
+
+
 # Resolves a submitted account_id form value. Returns (account_id, error)
 # where account_id is None if the field was left blank, or an int belonging
 # to user_id on success. Any invalid/unowned value yields the same generic
 # error, so a nonexistent id can't be distinguished from someone else's.
-def _resolve_account_id(conn, user_id, raw):
+# If raw is NEW_ACCOUNT_OPTION, a fresh account is created from new_name /
+# new_type (the "+ Add a new account" path on the expense/income forms) and
+# its id is returned instead of resolving an existing one.
+def _resolve_account_id(conn, user_id, raw, new_name="", new_type=""):
     raw = (raw or "").strip()
     if not raw:
         return None, None
+
+    if raw == NEW_ACCOUNT_OPTION:
+        new_name = (new_name or "").strip()
+        new_type = (new_type or "").strip() or "Other"
+        if not new_name:
+            return None, "Please enter a name for the new account."
+        account_id = conn.execute(
+            "INSERT INTO accounts (user_id, name, type, balance) VALUES (?, ?, ?, 0)",
+            (user_id, new_name, new_type),
+        ).lastrowid
+        return account_id, None
 
     try:
         account_id = int(raw)
@@ -272,12 +291,14 @@ def _where_clause(user_id, start, end, prefix=""):
 
 # --- SUBAGENT 1: transaction history --------------------------------- #
 def _get_recent_transactions(conn, user_id, start=None, end=None, limit=10):
-    where, params = _where_clause(user_id, start, end)
+    where, params = _where_clause(user_id, start, end, prefix="expenses.")
     query = f"""
-        SELECT id, date, description, category, amount, payment_method
+        SELECT expenses.id, expenses.date, expenses.description, expenses.category,
+               expenses.amount, expenses.payment_method, accounts.name AS account_name
         FROM expenses
+        LEFT JOIN accounts ON expenses.account_id = accounts.id
         WHERE {where}
-        ORDER BY date DESC
+        ORDER BY expenses.date DESC
         LIMIT ?
         """
     return conn.execute(query, params + [limit]).fetchall()
@@ -318,10 +339,16 @@ def _get_summary_stats(conn, user_id, start=None, end=None):
         """
     top = conn.execute(top_query, params).fetchone()
 
+    income_total = conn.execute(
+        f"SELECT COALESCE(SUM(amount), 0) AS total FROM income WHERE {where}", params
+    ).fetchone()["total"]
+
     return {
         "total": totals["total"],
         "count": totals["count"],
         "top_category": top["category"] if top else None,
+        "total_income": income_total,
+        "net_balance": income_total - totals["total"],
     }
 
 
@@ -368,6 +395,8 @@ def add_expense():
         "category": "",
         "payment_method": "",
         "account_id": "",
+        "new_account_name": "",
+        "new_account_type": "",
         "date": today,
         "description": "",
     }
@@ -380,6 +409,8 @@ def add_expense():
         form_values["category"] = request.form.get("category", "")
         form_values["payment_method"] = request.form.get("payment_method", "")
         form_values["account_id"] = request.form.get("account_id", "")
+        form_values["new_account_name"] = request.form.get("new_account_name", "")
+        form_values["new_account_type"] = request.form.get("new_account_type", "")
         form_values["date"] = request.form.get("date", "")
         form_values["description"] = request.form.get("description", "").strip()
 
@@ -387,7 +418,13 @@ def add_expense():
 
         account_id = None
         if error is None:
-            account_id, error = _resolve_account_id(conn, session["user_id"], form_values["account_id"])
+            account_id, error = _resolve_account_id(
+                conn,
+                session["user_id"],
+                form_values["account_id"],
+                form_values["new_account_name"],
+                form_values["new_account_type"],
+            )
 
         if error is None:
             conn.execute(
@@ -418,6 +455,7 @@ def add_expense():
         "add_expense.html",
         categories=CATEGORIES,
         payment_methods=PAYMENT_METHODS,
+        account_types=ACCOUNT_TYPES,
         accounts=accounts,
         error=error,
         **form_values,
@@ -544,7 +582,15 @@ def add_income():
         return redirect(url_for("login"))
 
     today = date.today().isoformat()
-    form_values = {"amount": "", "category": "", "account_id": "", "date": today, "description": ""}
+    form_values = {
+        "amount": "",
+        "category": "",
+        "account_id": "",
+        "new_account_name": "",
+        "new_account_type": "",
+        "date": today,
+        "description": "",
+    }
     error = None
 
     conn = get_db()
@@ -553,6 +599,8 @@ def add_income():
         form_values["amount"] = request.form.get("amount", "")
         form_values["category"] = request.form.get("category", "")
         form_values["account_id"] = request.form.get("account_id", "")
+        form_values["new_account_name"] = request.form.get("new_account_name", "")
+        form_values["new_account_type"] = request.form.get("new_account_type", "")
         form_values["date"] = request.form.get("date", "")
         form_values["description"] = request.form.get("description", "").strip()
 
@@ -562,7 +610,13 @@ def add_income():
         if error is None and not form_values["account_id"].strip():
             error = "Please select an account."
         if error is None:
-            account_id, error = _resolve_account_id(conn, session["user_id"], form_values["account_id"])
+            account_id, error = _resolve_account_id(
+                conn,
+                session["user_id"],
+                form_values["account_id"],
+                form_values["new_account_name"],
+                form_values["new_account_type"],
+            )
 
         if error is None:
             conn.execute(
@@ -590,6 +644,7 @@ def add_income():
     return render_template(
         "add_income.html",
         income_categories=INCOME_CATEGORIES,
+        account_types=ACCOUNT_TYPES,
         accounts=accounts,
         error=error,
         **form_values,
